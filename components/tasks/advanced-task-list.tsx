@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useAuth } from "@/lib/auth-context"
 import { useToast } from "@/hooks/use-toast"
-import { useSearchParams } from "next/navigation"
 import {
   Search,
   Loader2,
@@ -87,8 +86,7 @@ export function AdvancedTaskList() {
     }
   }
 
-  const searchParamsHook = useSearchParams()
-
+  
   const fetchTasks = async () => {
     try {
       setIsLoading(true)
@@ -102,29 +100,14 @@ export function AdvancedTaskList() {
         ...(search.trim() && { search: search.trim() }),
       })
 
-      if (user?.role === "admin" && searchParamsHook.get("view") === "subagents") {
-        const ownerFilter = selectedAgent !== "all" ? `&ownerAgentId=${selectedAgent}` : ""
-        const response = await fetch(`/api/admin/tasks?page=${page}&limit=12${ownerFilter}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (response.ok) {
-          const data = await response.json()
-          const sub = data?.subAgentAssigned || {}
-          const list = (sub.tasks || []).map((t: any) => ({ ...t, assigneeType: "subagent" }))
-          setTasks(list)
-          setTotal(sub.total || list.length)
-          setTotalPages(sub.totalPages || 1)
-        }
-      } else {
-        const response = await fetch(`/api/tasks?${params}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (response.ok) {
-          const data = await response.json()
-          setTasks(data.tasks)
-          setTotal(data.total)
-          setTotalPages(data.totalPages)
-        }
+      const response = await fetch(`/api/tasks?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setTasks(data.tasks)
+        setTotal(data.total)
+        setTotalPages(data.totalPages)
       }
     } catch (error) {
       console.error("Failed to fetch tasks:", error)
@@ -272,15 +255,17 @@ export function AdvancedTaskList() {
             {getPriorityBadge(task.priority || "low")}
           </div>
 
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <User className="h-4 w-4" />
-            <span>{task.agent?.name ? `Assigned to ${task.agent.name}` : "Unassigned"}</span>
-            {task.assigneeType && (
-              <Badge variant={task.assigneeType === "agent" ? "secondary" : "outline"}>
-                {task.assigneeType === "agent" ? "Agent" : "Sub-Agent"}
-              </Badge>
-            )}
-          </div>
+          {task.agent?.name && (
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <User className="h-4 w-4" />
+              <span>Assigned to {task.agent.name}</span>
+              {task.assigneeType && (
+                <Badge variant={task.assigneeType === "agent" ? "secondary" : "outline"}>
+                  {task.assigneeType === "agent" ? "Agent" : "Sub-Agent"}
+                </Badge>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />

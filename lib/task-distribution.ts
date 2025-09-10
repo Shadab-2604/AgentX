@@ -284,6 +284,8 @@ export class TaskDistributionService {
 
     // Build MongoDB query from filters
     const query: any = {}
+    // Exclude sub-agent tasks from admin/general task queries
+    query.subAssignedTo = { $exists: false }
 
     if (filters.uploadId) {
       query.uploadId = filters.uploadId
@@ -291,6 +293,9 @@ export class TaskDistributionService {
 
     if (filters.agentId && ObjectId.isValid(filters.agentId)) {
       query.assignedTo = filters.agentId
+    } else {
+      // Only include tasks that are assigned to an agent
+      query.assignedTo = { $exists: true, $ne: "" }
     }
 
     if (filters.status) {

@@ -208,13 +208,15 @@ export function TaskList() {
                           {task.description || <span className="text-muted-foreground">No description</span>}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="font-medium">{task.agent?.name ? `Assigned to ${task.agent.name}` : "Unassigned"}</p>
-                              <p className="text-xs text-muted-foreground">{task.agent?.email || "No email"}</p>
+                          {task.agent?.name && (
+                            <div className="flex items-center space-x-2">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="font-medium">Assigned to {task.agent.name}</p>
+                                <p className="text-xs text-muted-foreground">{task.agent?.email}</p>
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </TableCell>
                         <TableCell>{getStatusBadge(task.status)}</TableCell>
                         <TableCell>{new Date(task.createdAt).toLocaleDateString()}</TableCell>
