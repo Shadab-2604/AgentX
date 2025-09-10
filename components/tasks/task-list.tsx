@@ -41,6 +41,7 @@ export function TaskList() {
   const [total, setTotal] = useState(0)
   const { token } = useAuth()
 
+  // Only fetch agents, not subagents
   const fetchAgents = async () => {
     try {
       const response = await fetch("/api/agents?limit=100", {
@@ -210,7 +211,7 @@ export function TaskList() {
                           <div className="flex items-center space-x-2">
                             <User className="h-4 w-4 text-muted-foreground" />
                             <div>
-                              <p className="font-medium">{task.agent?.name || "Unassigned"}</p>
+                              <p className="font-medium">{task.agent?.name ? `Assigned to ${task.agent.name}` : "Unassigned"}</p>
                               <p className="text-xs text-muted-foreground">{task.agent?.email || "No email"}</p>
                             </div>
                           </div>

@@ -8,7 +8,7 @@ export interface User {
   _id: string
   email: string
   name: string
-  role: "admin"
+  role: "admin" | "agent"
 }
 
 export async function hashPassword(password: string): Promise<string> {

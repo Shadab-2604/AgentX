@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useAuth } from "@/lib/auth-context"
 import { useToast } from "@/hooks/use-toast"
+import { useSearchParams } from "next/navigation"
 import {
   Search,
   Loader2,
@@ -41,6 +42,7 @@ interface Task {
     name: string
     email: string
   } | null
+  assigneeType?: "agent" | "subagent"
   notes?: string
   estimatedHours?: number
   actualHours?: number
@@ -68,7 +70,7 @@ export function AdvancedTaskList() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const { toast } = useToast()
 
   const fetchAgents = async () => {
@@ -85,6 +87,8 @@ export function AdvancedTaskList() {
     }
   }
 
+  const searchParamsHook = useSearchParams()
+
   const fetchTasks = async () => {
     try {
       setIsLoading(true)
@@ -98,15 +102,29 @@ export function AdvancedTaskList() {
         ...(search.trim() && { search: search.trim() }),
       })
 
-      const response = await fetch(`/api/tasks?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setTasks(data.tasks)
-        setTotal(data.total)
-        setTotalPages(data.totalPages)
+      if (user?.role === "admin" && searchParamsHook.get("view") === "subagents") {
+        const ownerFilter = selectedAgent !== "all" ? `&ownerAgentId=${selectedAgent}` : ""
+        const response = await fetch(`/api/admin/tasks?page=${page}&limit=12${ownerFilter}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (response.ok) {
+          const data = await response.json()
+          const sub = data?.subAgentAssigned || {}
+          const list = (sub.tasks || []).map((t: any) => ({ ...t, assigneeType: "subagent" }))
+          setTasks(list)
+          setTotal(sub.total || list.length)
+          setTotalPages(sub.totalPages || 1)
+        }
+      } else {
+        const response = await fetch(`/api/tasks?${params}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setTasks(data.tasks)
+          setTotal(data.total)
+          setTotalPages(data.totalPages)
+        }
       }
     } catch (error) {
       console.error("Failed to fetch tasks:", error)
@@ -256,7 +274,12 @@ export function AdvancedTaskList() {
 
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
             <User className="h-4 w-4" />
-            <span>{task.agent?.name || "Unassigned"}</span>
+            <span>{task.agent?.name ? `Assigned to ${task.agent.name}` : "Unassigned"}</span>
+            {task.assigneeType && (
+              <Badge variant={task.assigneeType === "agent" ? "secondary" : "outline"}>
+                {task.assigneeType === "agent" ? "Agent" : "Sub-Agent"}
+              </Badge>
+            )}
           </div>
 
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
@@ -496,8 +519,17 @@ export function AdvancedTaskList() {
                   <div className="mt-1">{getPriorityBadge(selectedTask.priority || "low")}</div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Assigned Agent</label>
-                  <p className="mt-1">{selectedTask.agent?.name || "Unassigned"}</p>
+                  <label className="text-sm font-medium">Assigned</label>
+                  <p className="mt-1">
+                    {selectedTask.agent?.name ? `Assigned to ${selectedTask.agent.name}` : "Unassigned"}
+                  </p>
+                  {selectedTask.assigneeType && (
+                    <div className="mt-1">
+                      <Badge variant={selectedTask.assigneeType === "agent" ? "secondary" : "outline"}>
+                        {selectedTask.assigneeType === "agent" ? "Agent" : "Sub-Agent"}
+                      </Badge>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium">Created Date</label>

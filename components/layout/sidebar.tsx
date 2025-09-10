@@ -22,32 +22,21 @@ import {
   ChevronRight,
 } from "lucide-react"
 
-const navigation = [
-  {
-    name: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    name: "Agents",
-    href: "/dashboard/agents",
-    icon: Users,
-  },
-  {
-    name: "Upload Files",
-    href: "/dashboard/upload",
-    icon: Upload,
-  },
-  {
-    name: "Tasks",
-    href: "/dashboard/tasks",
-    icon: FileText,
-  },
-  {
-    name: "Settings",
-    href: "/dashboard/settings",
-    icon: Settings,
-  },
+const adminNav = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Agents", href: "/dashboard/agents", icon: Users },
+  { name: "Upload Files", href: "/dashboard/upload", icon: Upload },
+  { name: "Agent Tasks", href: "/dashboard/tasks", icon: FileText },
+  //{ name: "Sub-Agent Tasks", href: "/dashboard/sub-agents", icon: FileText },
+  { name: "Settings", href: "/dashboard/settings", icon: Settings },
+]
+
+const agentNav = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Sub-Agents", href: "/dashboard/sub-agents", icon: Users },
+  { name: "Imports", href: "/dashboard/upload", icon: Upload },
+  { name: "Sub-Agent Tasks", href: "/dashboard/tasks", icon: FileText },
+  { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ]
 
 interface SidebarProps {
@@ -108,8 +97,8 @@ export function Sidebar({ children }: SidebarProps) {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-2">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href
+            {(user?.role === "agent" ? agentNav : adminNav).map((item) => {
+              const isActive = pathname === item.href || (item.href.includes("?") ? pathname.startsWith(item.href.split("?")[0]) : false)
               return (
                 <Link
                   key={item.name}

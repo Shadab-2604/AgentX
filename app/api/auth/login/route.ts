@@ -13,11 +13,17 @@ export async function POST(request: NextRequest) {
     const client = await clientPromise
     const db = client.db("agentx")
 
-    // Find admin user
-    const user = await db.collection("admins").findOne({ email })
+    // Find admin or agent user
+    let user: any = await db.collection("admins").findOne({ email })
+    let role: "admin" | "agent" = "admin"
 
     if (!user) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+      const agent = await db.collection("agents").findOne({ email })
+      if (!agent) {
+        return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+      }
+      user = agent
+      role = "agent"
     }
 
     // Verify password
@@ -32,7 +38,7 @@ export async function POST(request: NextRequest) {
       _id: user._id.toString(),
       email: user.email,
       name: user.name,
-      role: user.role,
+      role,
     })
 
     return NextResponse.json({
@@ -42,7 +48,7 @@ export async function POST(request: NextRequest) {
         _id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: role,
       },
     })
   } catch (error) {

@@ -36,7 +36,7 @@ export function EnhancedFileUpload() {
   const [showPreview, setShowPreview] = useState(false)
   const [selectedPreview, setSelectedPreview] = useState<FilePreview | null>(null)
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null)
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const { toast } = useToast()
 
   const onDrop = useCallback(
@@ -125,7 +125,8 @@ export function EnhancedFileUpload() {
         const formData = new FormData()
         formData.append("file", file)
 
-        const response = await fetch("/api/upload", {
+        const endpoint = user?.role === "agent" ? "/api/subagents/upload" : "/api/upload"
+        const response = await fetch(endpoint, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,

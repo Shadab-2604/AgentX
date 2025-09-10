@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { connectDB } from "@/lib/mongodb"
+import clientPromise, { connectDB } from "@/lib/mongodb"
 import { Upload } from "@/lib/models"
 import { verifyToken } from "@/lib/auth"
 import { v2 as cloudinary } from "cloudinary"
@@ -45,6 +45,16 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         console.error("Failed to delete from Cloudinary:", cloudinaryError)
         // Continue with database deletion even if Cloudinary fails
       }
+    }
+
+    // Delete tasks associated with this upload
+    try {
+      const client = await clientPromise
+      const db = client.db("agentx")
+      await db.collection("tasks").deleteMany({ uploadId: params.id })
+    } catch (cleanupErr) {
+      console.error("Failed to delete tasks for upload:", params.id, cleanupErr)
+      // Proceed to delete upload record even if task deletion fails
     }
 
     // Delete from database

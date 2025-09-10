@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { authenticateRequest } from "@/lib/auth"
 import { taskDistributionService } from "@/lib/task-distribution"
+import { subAgentService } from "@/lib/subagents"
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,6 +22,23 @@ export async function GET(request: NextRequest) {
     const page = Number.parseInt(searchParams.get("page") || "1")
     const limit = Number.parseInt(searchParams.get("limit") || "10")
 
+    // If logged-in user is an agent, scope to their sub-agent tasks and map subAgent -> agent for UI compatibility
+    if (user.role === "agent") {
+      const result = await subAgentService.getTasksByOwnerAgent(user._id, page, limit)
+      const tasks = result.tasks.map((t: any) => ({
+        ...t,
+        agent: t.subAgent || null,
+        assigneeType: "subagent",
+      }))
+      return NextResponse.json({
+        success: true,
+        tasks,
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
+      })
+    }
+
     // Build filter object
     const filters = {
       ...(uploadId && { uploadId }),
@@ -32,7 +50,8 @@ export async function GET(request: NextRequest) {
 
     if (uploadId) {
       // Get tasks by upload ID
-      const tasks = await taskDistributionService.getTasksByUploadId(uploadId)
+      const tasksRaw = await taskDistributionService.getTasksByUploadId(uploadId)
+      const tasks = tasksRaw.map((t: any) => ({ ...t, assigneeType: "agent" }))
       return NextResponse.json({
         success: true,
         tasks,
@@ -43,9 +62,13 @@ export async function GET(request: NextRequest) {
     }
 
     const result = await taskDistributionService.getFilteredTasks(filters, page, limit, sortBy, sortOrder)
+    const mapped = {
+      ...result,
+      tasks: result.tasks.map((t: any) => ({ ...t, assigneeType: "agent" })),
+    }
     return NextResponse.json({
       success: true,
-      ...result,
+      ...mapped,
     })
   } catch (error) {
     console.error("Get tasks error:", error)

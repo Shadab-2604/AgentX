@@ -106,15 +106,26 @@ export class TaskDistributionService {
       .aggregate([
         { $match: { uploadId } },
         {
+          $addFields: {
+            assignedToObjId: {
+              $cond: [
+                { $and: [{ $ne: ["$assignedTo", null] }, { $ne: ["$assignedTo", ""] }] },
+                { $toObjectId: "$assignedTo" },
+                null,
+              ],
+            },
+          },
+        },
+        {
           $lookup: {
             from: "agents",
-            localField: "assignedTo",
+            localField: "assignedToObjId",
             foreignField: "_id",
             as: "agent",
           },
         },
         {
-          $unwind: "$agent",
+          $unwind: { path: "$agent", preserveNullAndEmptyArrays: true },
         },
         {
           $project: {
@@ -125,9 +136,11 @@ export class TaskDistributionService {
             createdAt: 1,
             updatedAt: 1,
             agent: {
-              _id: "$agent._id",
-              name: "$agent.name",
-              email: "$agent.email",
+              $cond: [
+                { $ifNull: ["$agent._id", false] },
+                { _id: "$agent._id", name: "$agent.name", email: "$agent.email" },
+                null,
+              ],
             },
           },
         },
@@ -197,15 +210,26 @@ export class TaskDistributionService {
         { $skip: skip },
         { $limit: limit },
         {
+          $addFields: {
+            assignedToObjId: {
+              $cond: [
+                { $and: [{ $ne: ["$assignedTo", null] }, { $ne: ["$assignedTo", ""] }] },
+                { $toObjectId: "$assignedTo" },
+                null,
+              ],
+            },
+          },
+        },
+        {
           $lookup: {
             from: "agents",
-            localField: "assignedTo",
+            localField: "assignedToObjId",
             foreignField: "_id",
             as: "agent",
           },
         },
         {
-          $unwind: "$agent",
+          $unwind: { path: "$agent", preserveNullAndEmptyArrays: true },
         },
         {
           $project: {
@@ -216,9 +240,11 @@ export class TaskDistributionService {
             createdAt: 1,
             updatedAt: 1,
             agent: {
-              _id: "$agent._id",
-              name: "$agent.name",
-              email: "$agent.email",
+              $cond: [
+                { $ifNull: ["$agent._id", false] },
+                { _id: "$agent._id", name: "$agent.name", email: "$agent.email" },
+                null,
+              ],
             },
           },
         },
@@ -297,9 +323,20 @@ export class TaskDistributionService {
         { $skip: skip },
         { $limit: limit },
         {
+          $addFields: {
+            assignedToObjId: {
+              $cond: [
+                { $and: [{ $ne: ["$assignedTo", null] }, { $ne: ["$assignedTo", ""] }] },
+                { $toObjectId: "$assignedTo" },
+                null,
+              ],
+            },
+          },
+        },
+        {
           $lookup: {
             from: "agents",
-            localField: "assignedTo",
+            localField: "assignedToObjId",
             foreignField: "_id",
             as: "agent",
           },
@@ -322,9 +359,11 @@ export class TaskDistributionService {
             updatedAt: 1,
             uploadId: 1,
             agent: {
-              _id: "$agent._id",
-              name: "$agent.name",
-              email: "$agent.email",
+              $cond: [
+                { $ifNull: ["$agent._id", false] },
+                { _id: "$agent._id", name: "$agent.name", email: "$agent.email" },
+                null,
+              ],
             },
           },
         },
